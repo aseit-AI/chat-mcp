@@ -29,7 +29,7 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-# 系统提示词模板，参考Cherry Studio的实现
+# 系统提示词模板
 SYSTEM_PROMPT_TEMPLATE = """{{ USER_SYSTEM_PROMPT }}
 
 {{ TOOL_USE_EXAMPLES }}
@@ -38,7 +38,8 @@ SYSTEM_PROMPT_TEMPLATE = """{{ USER_SYSTEM_PROMPT }}
 
 # 工具使用示例
 TOOL_USE_EXAMPLES = """
-You have access to tools that you can use to help answer questions. When using a tool, format your request using XML tags:
+You have access to tools that you can use to help answer questions. 
+When using a tool, format your request using XML tags:
 
 <tool_use>
 <tool_name>tool_name_here</tool_name>
@@ -54,8 +55,10 @@ IMPORTANT RULES:
 1. Only call tools when you need additional information
 2. After receiving tool results (success or error), provide your final answer directly
 3. Do NOT retry failed tool calls or call the same tool multiple times
-4. For optional parameters: ONLY include them if you have a specific value - do NOT pass empty strings "", null, or placeholder values
-5. When tool parameters are not mentioned or not needed, simply omit them from the parameters object
+4. For optional parameters: ONLY include them if you have a specific value - 
+   do NOT pass empty strings "", null, or placeholder values
+5. When tool parameters are not mentioned or not needed, 
+   simply omit them from the parameters object
 """
 
 # 全局服务器配置存储
@@ -121,15 +124,7 @@ def build_system_prompt(user_system_prompt: str, tools: List[MCPTool]) -> str:
     Returns:
         完整的系统提示词
 
-    参考代码：prompt.ts:150-158
-    export const buildSystemPrompt = (userSystemPrompt: string, tools: MCPTool[]): string => {
-      if (tools && tools.length > 0) {
-        return SYSTEM_PROMPT.replace('{{ USER_SYSTEM_PROMPT }}', userSystemPrompt)
-          .replace('{{ TOOL_USE_EXAMPLES }}', ToolUseExamples)
-          .replace('{{ AVAILABLE_TOOLS }}', AvailableTools(tools))
-      }
-      return userSystemPrompt
-    }
+
     """
     if tools and len(tools) > 0:
         return (
@@ -148,7 +143,7 @@ def parse_tool_use(
 ) -> List[ToolParseResult]:
     """
     解析LLM响应中的工具调用
-    参考代码：mcp-tools.ts parseToolUse函数
+
 
     Args:
         content: LLM响应内容
@@ -160,7 +155,10 @@ def parse_tool_use(
     tools = []
 
     # 使用正则表达式匹配工具调用XML
-    pattern = r"<tool_use>\s*<tool_name>([^<]+)</tool_name>\s*<parameters>([^<]*)</parameters>\s*</tool_use>"
+    pattern = (
+        r"<tool_use>\s*<tool_name>([^<]+)</tool_name>\s*"
+        r"<parameters>([^<]*)</parameters>\s*</tool_use>"
+    )
     matches = re.findall(pattern, content, re.DOTALL)
 
     for i, match in enumerate(matches):
@@ -199,7 +197,7 @@ async def call_mcp_tool(
 ) -> MCPCallToolResponse:
     """
     调用MCP工具
-    参考代码：mcp-tools.ts callMCPTool函数
+
 
     Args:
         tool_call: 工具调用信息
@@ -290,7 +288,7 @@ def upsert_mcp_tool_response(
 ) -> None:
     """
     更新或插入MCP工具响应
-    参考代码：mcp-tools.ts upsertMCPToolResponse函数
+
 
     Args:
         tool_responses: 工具响应列表
@@ -304,7 +302,10 @@ def upsert_mcp_tool_response(
             if on_chunk:
                 on_chunk(
                     {
-                        "text": f"[工具更新] {tool_response.tool.name}: {tool_response.status}\n",
+                        "text": (
+                            f"[工具更新] {tool_response.tool.name}: "
+                            f"{tool_response.status}\n"
+                        ),
                         "tool_response": tool_response.model_dump(),
                     }
                 )
@@ -362,23 +363,6 @@ async def parse_and_call_tools(
 ) -> List[ChatMessage]:
     """
     解析LLM响应中的工具调用并执行
-    参考代码：mcp-tools.ts:391-443 parseAndCallTools函数
-
-    export async function parseAndCallTools(
-      content: string,
-      toolResponses: MCPToolResponse[],
-      onChunk: CompletionsParams['onChunk'],
-      idx: number,
-      convertToMessage: (
-        toolCallId: string,
-        resp: MCPCallToolResponse,
-        isVisionModel: boolean
-      ) => ChatCompletionMessageParam | MessageParam | Content,
-      mcpTools?: MCPTool[],
-      isVisionModel: boolean = false
-    ): Promise<(ChatCompletionMessageParam | MessageParam | Content)[]> {
-      ...
-    }
 
     Args:
         content: LLM响应内容
@@ -632,7 +616,7 @@ class AIProvider:
 def getMcpServerByTool(tool: MCPTool) -> Optional[MCPServer]:
     """
     根据工具获取对应的MCP服务器配置
-    参考代码：mcp-tools.ts getMcpServerByTool函数
+
 
     Args:
         tool: MCP工具对象
@@ -730,7 +714,7 @@ async def callMCPTool(
         logger.error(f"[MCP] Error calling Tool: {tool_name}: {e}")
         return MCPCallToolResponse(
             content=[
-                {"type": "text", "text": f"Error calling tool {tool_name}: {str(e)}"}
+                {"type": "text", "text": (f"Error calling tool {tool_name}: {str(e)}")}
             ],
             isError=True,
         )
@@ -881,7 +865,11 @@ async def complete_mcp_workflow(
             # 创建更清晰的工具结果消息，让LLM明确知道工具已执行完成
             tool_message = ChatMessage(
                 role="user",  # 改为user角色，让LLM更容易理解这是输入信息
-                content=f"工具调用结果：\n工具名称：{tool_call.tool.name}\n执行状态：{'成功' if not result.isError else '失败'}\n结果内容：\n{result_text}",
+                content=(
+                    f"工具调用结果：\n工具名称：{tool_call.tool.name}\n"
+                    f"执行状态：{'成功' if not result.isError else '失败'}\n"
+                    f"结果内容：\n{result_text}"
+                ),
                 metadata={
                     "tool_name": tool_call.tool.name,
                     "tool_result": result.model_dump(),
@@ -896,7 +884,8 @@ async def complete_mcp_workflow(
                 on_progress("📤 添加到消息历史 - 工具结果:")
                 on_progress(f"   🔧 工具: {tool_call.tool.name}")
                 on_progress(
-                    f"   📄 结果: {result_text[:150]}{'...' if len(result_text) > 150 else ''}"
+                    f"   📄 结果: {result_text[:150]}"
+                    f"{'...' if len(result_text) > 150 else ''}"
                 )
 
         if on_progress:

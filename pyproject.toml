@@ -1,6 +1,6 @@
 [project]
 name = "chat-mcp"
-version = "0.1.0"
+version = "0.1.1"
 description = "MCP客户端库，用于在对话中调用MCP工具"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -28,6 +28,10 @@ dev-dependencies = [
     "black>=23.0.0",
     "ruff>=0.1.0",
 ]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 
 [build-system]
 requires = ["hatchling"]

@@ -7,7 +7,7 @@ import asyncio
 import logging
 from typing import List
 
-from src.chat_mcp import (
+from chat_mcp import (
     callMCPTool,
     execute_mcp_tool_calls,
     complete_mcp_workflow,
@@ -18,7 +18,7 @@ from src.chat_mcp import (
     MCPServer,
     MCPCallToolResponse,
 )
-from src.chat_mcp.ipc_handler import window_api_mcp
+from chat_mcp.ipc_handler import window_api_mcp
 
 # 设置日志
 logging.basicConfig(level=logging.INFO)
@@ -243,6 +243,11 @@ async def test_complete_workflow():
         # 验证响应
         assert final_response.message.role == "assistant"
         assert len(final_response.message.content) > 0
+
+        print(
+            f"[验证] complete_mcp_workflow执行成功: "
+            f"{final_response.message.content[:100]}"
+        )
 
     except Exception as e:
         print(f"⚠️  工作流程异常: {e}")
